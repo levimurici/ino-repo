@@ -1,0 +1,48 @@
+package main;
+import platforms.xdk110;
+
+var tempCorrection = 6.5975;
+
+// ******** Connection ******** //
+setup myWifiResource : WLAN {
+    authentication = Personal(psk = "inovacao");
+    ssid = "IPQ";
+}
+
+setup messaging : MQTT {
+	transport = myWifiResource;
+	url = "mqtt://192.168.101.28:1883";
+	clientId = 'myXdk';
+	var Test = topic("device1/xdk110",1);	
+}
+
+every button_one.pressed {
+	messaging.Test.write("Test Write");
+}
+
+// ********** Setup ************** //
+setup environment {
+    power_mode = Normal;
+    standby_time = 1000; // ms
+    temperature_oversampling = OVERSAMPLE_1X;
+}
+
+setup light {
+    manual_mode = false;
+}
+
+//every 100 milliseconds {
+//	var light : double = light.intensity.read()/1000.00;
+//	messaging.Test.write(`Lumm: ${light}`);
+//}
+
+every 1 seconds {
+    var humi = environment.humidity.read();
+    var pres : double = environment.pressure.read()/1000.00;
+    var temp : double = environment.temperature.read()/1000.00;
+    var light : double = light.intensity.read()/1000.00;
+    
+    temp = temp - tempCorrection;
+    
+    messaging.Test.write(`{"data":[{"H":${humi},"P":${pres},"T":${temp},"L":${light}}]}`);
+}
